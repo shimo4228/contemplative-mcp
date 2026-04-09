@@ -1,6 +1,6 @@
 """Tests for EpisodeLog."""
 
-from contemplative_mcp.episode_log import EpisodeLog
+from akc_mcp.episode_log import EpisodeLog
 
 
 class TestEpisodeLog:

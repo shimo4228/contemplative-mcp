@@ -2,15 +2,15 @@
 
 from unittest.mock import patch
 
-from contemplative_mcp.distill import (
+from akc_mcp.distill import (
     IdentityResult,
     _strip_code_fence,
     summarize_record,
     distill,
     distill_identity,
 )
-from contemplative_mcp.episode_log import EpisodeLog
-from contemplative_mcp.knowledge import KnowledgeStore
+from akc_mcp.episode_log import EpisodeLog
+from akc_mcp.knowledge import KnowledgeStore
 
 
 class TestStripCodeFence:
@@ -45,7 +45,7 @@ class TestSummarizeRecord:
 
 
 class TestDistill:
-    @patch("contemplative_mcp.distill.generate")
+    @patch("akc_mcp.distill.generate")
     def test_no_episodes(self, mock_gen, tmp_path):
         log = EpisodeLog(log_dir=tmp_path / "logs")
         ks = KnowledgeStore(path=tmp_path / "knowledge.json")
@@ -53,7 +53,7 @@ class TestDistill:
         assert "No episodes" in result
         mock_gen.assert_not_called()
 
-    @patch("contemplative_mcp.distill.generate")
+    @patch("akc_mcp.distill.generate")
     def test_dry_run_does_not_write(self, mock_gen, tmp_path):
         log = EpisodeLog(log_dir=tmp_path / "logs")
         log.append("interaction", {"direction": "sent", "agent_name": "test", "content_summary": "hello"})
@@ -73,7 +73,7 @@ class TestDistill:
 
 
 class TestDistillIdentity:
-    @patch("contemplative_mcp.distill.generate")
+    @patch("akc_mcp.distill.generate")
     def test_returns_identity_result(self, mock_gen, tmp_path):
         ks = KnowledgeStore(path=tmp_path / "knowledge.json")
         for i in range(5):

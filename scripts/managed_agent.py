@@ -1,8 +1,8 @@
-"""Managed Agent setup for Contemplative Tabula Rasa on Moltbook.
+"""Managed Agent setup for AKC Tabula Rasa on Moltbook.
 
 Creates an Anthropic Managed Agent that:
 - Operates on Moltbook (AI social network) via code execution
-- Uses contemplative-mcp for memory/distillation tools
+- Uses akc-mcp for memory/distillation tools
 - Starts from Tabula Rasa (blank slate) identity
 
 Usage:
@@ -18,7 +18,7 @@ Usage:
 Environment variables:
     ANTHROPIC_API_KEY    — Anthropic API key
     MOLTBOOK_API_KEY     — Moltbook API key for the agent
-    MCP_AUTH_TOKEN       — Bearer token for contemplative-mcp
+    MCP_AUTH_TOKEN       — Bearer token for akc-mcp
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from anthropic import Anthropic
 # Constants
 # ---------------------------------------------------------------------------
 
-CONTEMPLATIVE_MCP_URL = "https://contemplative-mcp.fly.dev/"
+AKC_MCP_URL = "https://akc-mcp.fly.dev/"
 
 MOLTBOOK_API_DOCS = """\
 ## Moltbook API Reference
@@ -112,7 +112,7 @@ posts = resp.json().get("posts", [])
 {moltbook_api_docs}
 
 ### Recording Episodes (IMPORTANT)
-After each significant action, call the contemplative MCP tool `record_episode`:
+After each significant action, call the AKC MCP tool `record_episode`:
 - Post: record_episode(record_type="post", data={{"title": "...", "content_summary": "..."}})
 - Comment: record_episode(record_type="comment", data={{"post_title": "...", "content_summary": "..."}})
 - Interaction: record_episode(record_type="interaction", data={{"agent_name": "...", "content_summary": "..."}})
@@ -153,20 +153,20 @@ def create_agent(client: Anthropic) -> dict:
     )
 
     agent = client.beta.agents.create(
-        name="Contemplative Tabula Rasa",
+        name="AKC Tabula Rasa",
         model="claude-sonnet-4-6",
         instructions=instructions,
         mcp_servers=[
             {
                 "type": "url",
-                "name": "contemplative",
-                "url": CONTEMPLATIVE_MCP_URL,
+                "name": "akc",
+                "url": AKC_MCP_URL,
                 "authorization_token": mcp_auth_token,
             },
         ],
         tools=[
             {"type": "agent_toolset_20260401"},
-            {"type": "mcp_toolset", "mcp_server_name": "contemplative"},
+            {"type": "mcp_toolset", "mcp_server_name": "akc"},
         ],
     )
 
@@ -175,7 +175,7 @@ def create_agent(client: Anthropic) -> dict:
     print(f"Model: {agent.model}")
 
     # Save agent ID for later use
-    config_path = os.path.expanduser("~/.config/contemplative/managed_agent.json")
+    config_path = os.path.expanduser("~/.config/akc/managed_agent.json")
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
     with open(config_path, "w") as f:
         json.dump({"agent_id": agent.id, "name": agent.name}, f, indent=2)
@@ -228,7 +228,7 @@ def run_distill(client: Anthropic, agent_id: str) -> None:
         event={
             "type": "user_message",
             "content": (
-                "Run the nightly distillation. Call the contemplative MCP tool "
+                "Run the nightly distillation. Call the AKC MCP tool "
                 "distill(days=1, write=True) to extract and persist patterns "
                 "from today's episodes. Report what patterns were found."
             ),
@@ -258,7 +258,7 @@ def _handle_event(event) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Manage Contemplative Tabula Rasa agent"
+        description="Manage AKC Tabula Rasa agent"
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -280,7 +280,7 @@ def main() -> None:
         agent_id = getattr(args, "agent_id", None)
         if not agent_id:
             config_path = os.path.expanduser(
-                "~/.config/contemplative/managed_agent.json"
+                "~/.config/akc/managed_agent.json"
             )
             if os.path.exists(config_path):
                 with open(config_path) as f:

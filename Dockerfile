@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir ".[remote]"
 
 EXPOSE 8000
 
-CMD ["contemplative-mcp", "--transport", "streamable-http"]
+CMD ["akc-mcp", "--transport", "streamable-http"]

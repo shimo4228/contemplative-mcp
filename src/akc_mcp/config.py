@@ -7,9 +7,9 @@ import re
 from pathlib import Path
 
 # --- Data directory ---
-CONTEMPLATIVE_HOME = Path(
+AKC_HOME = Path(
     os.environ.get(
-        "CONTEMPLATIVE_HOME", str(Path.home() / ".config" / "contemplative")
+        "AKC_HOME", str(Path.home() / ".config" / "akc")
     )
 )
 

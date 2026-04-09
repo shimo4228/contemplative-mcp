@@ -3,7 +3,7 @@
 import json
 from datetime import datetime, timezone
 
-from contemplative_mcp.knowledge import KnowledgeStore, effective_importance
+from akc_mcp.knowledge import KnowledgeStore, effective_importance
 
 
 class TestEffectiveImportance:

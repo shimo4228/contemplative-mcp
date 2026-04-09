@@ -1,6 +1,6 @@
-# Contemplative MCP
+# AKC MCP
 
-MCP server providing contemplative cognitive tools — distillation, constitution, self-improvement. contemplative-agent の認知層を独立パッケージとして再実装。
+MCP server providing AKC (Agent Knowledge Cycle) cognitive tools — distillation, constitution, self-improvement. contemplative-agent の認知層を独立パッケージとして再実装。
 
 ## Tech Stack
 
@@ -11,7 +11,7 @@ MCP server providing contemplative cognitive tools — distillation, constitutio
 ## Structure
 
 ```
-src/contemplative_mcp/
+src/akc_mcp/
   server.py         # FastMCP server (7 tools, 5 resources)
   llm.py            # Anthropic API backend
   config.py         # Paths, security constants
@@ -35,19 +35,19 @@ uv pip install -e ".[dev]"
 
 # Test
 uv run pytest tests/ -v
-uv run pytest tests/ --cov=contemplative_mcp --cov-report=term-missing
+uv run pytest tests/ --cov=akc_mcp --cov-report=term-missing
 
 # Run MCP server (stdio)
 export ANTHROPIC_API_KEY=sk-...
-contemplative-mcp
+akc-mcp
 
 # Or via module
-python -m contemplative_mcp.server
+python -m akc_mcp.server
 ```
 
 ## Conventions
 
-- Data directory: `~/.config/contemplative/` (env: `CONTEMPLATIVE_HOME`)
+- Data directory: `~/.config/akc/` (env: `AKC_HOME`)
 - Data format: contemplative-agent 完全互換 (knowledge.json, identity.md, JSONL logs)
 - All tools are read-only (dry_run / result return only). No file writes via MCP
 - Forbidden pattern validation on all content

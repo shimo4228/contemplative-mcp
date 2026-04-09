@@ -2,14 +2,14 @@
 
 from unittest.mock import MagicMock, patch
 
-from contemplative_mcp.llm import generate, reset, _sanitize
+from akc_mcp.llm import generate, reset, _sanitize
 
 
 class TestGenerate:
     def setup_method(self):
         reset()
 
-    @patch("contemplative_mcp.llm.anthropic")
+    @patch("akc_mcp.llm.anthropic")
     def test_generate_success(self, mock_anthropic):
         mock_client = MagicMock()
         mock_msg = MagicMock()
@@ -20,7 +20,7 @@ class TestGenerate:
         result = generate("test prompt", system="test system")
         assert result == "Hello world"
 
-    @patch("contemplative_mcp.llm.anthropic")
+    @patch("akc_mcp.llm.anthropic")
     def test_generate_api_error(self, mock_anthropic):
         mock_client = MagicMock()
         mock_client.messages.create.side_effect = Exception("API error")

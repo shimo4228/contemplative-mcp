@@ -1,4 +1,4 @@
-"""FastMCP server — contemplative cognitive tools for AI agents."""
+"""FastMCP server — AKC cognitive tools for AI agents."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def _ensure_defaults(data_dir: Path) -> None:
 async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """Initialize data directory and LLM on startup."""
     data_dir = Path(
-        os.environ.get("CONTEMPLATIVE_HOME", "~/.config/contemplative")
+        os.environ.get("AKC_HOME", "~/.config/akc")
     ).expanduser()
     data_dir.mkdir(parents=True, exist_ok=True)
     _ensure_defaults(data_dir)
@@ -64,11 +64,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     from .llm import configure
     configure()
 
-    logger.info("Contemplative MCP server started (data: %s)", data_dir)
+    logger.info("AKC MCP server started (data: %s)", data_dir)
     yield {"data_dir": data_dir}
 
 
-mcp = FastMCP("contemplative", lifespan=lifespan)
+mcp = FastMCP("akc", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ def rules_stocktake(ctx: Context = None) -> str:
 # Resources
 # ---------------------------------------------------------------------------
 
-@mcp.resource("contemplative://identity")
+@mcp.resource("akc://identity")
 def read_identity(ctx: Context = None) -> str:
     """Current agent identity (personality description)."""
     path = _data_dir(ctx) / "identity.md"
@@ -314,7 +314,7 @@ def read_identity(ctx: Context = None) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@mcp.resource("contemplative://knowledge")
+@mcp.resource("akc://knowledge")
 def read_knowledge(ctx: Context = None) -> str:
     """Distilled knowledge patterns (JSON)."""
     path = _data_dir(ctx) / "knowledge.json"
@@ -323,7 +323,7 @@ def read_knowledge(ctx: Context = None) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@mcp.resource("contemplative://constitution/{filename}")
+@mcp.resource("akc://constitution/{filename}")
 def read_constitution(filename: str, ctx: Context = None) -> str:
     """Ethical constitution file."""
     base = _data_dir(ctx) / "constitution"
@@ -335,7 +335,7 @@ def read_constitution(filename: str, ctx: Context = None) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@mcp.resource("contemplative://skills/{filename}")
+@mcp.resource("akc://skills/{filename}")
 def read_skill(filename: str, ctx: Context = None) -> str:
     """Behavioral skill document."""
     base = _data_dir(ctx) / "skills"
@@ -347,7 +347,7 @@ def read_skill(filename: str, ctx: Context = None) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@mcp.resource("contemplative://rules/{filename}")
+@mcp.resource("akc://rules/{filename}")
 def read_rule(filename: str, ctx: Context = None) -> str:
     """Behavioral rule document."""
     base = _data_dir(ctx) / "rules"
@@ -365,7 +365,7 @@ def read_rule(filename: str, ctx: Context = None) -> str:
 
 def main() -> None:
     """Run the MCP server."""
-    parser = argparse.ArgumentParser(description="Contemplative MCP server")
+    parser = argparse.ArgumentParser(description="AKC MCP server")
     parser.add_argument(
         "--transport",
         choices=["stdio", "streamable-http"],

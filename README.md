@@ -1,12 +1,12 @@
-# Contemplative MCP
+# AKC MCP
 
-An MCP (Model Context Protocol) server that provides contemplative cognitive tools for AI agents — memory distillation, identity evolution, skill extraction, and ethical governance.
+An MCP (Model Context Protocol) server that provides Agent Knowledge Cycle (AKC) cognitive tools for AI agents — memory distillation, identity evolution, skill extraction, and ethical governance.
 
 Born from the [contemplative-agent](https://github.com/shimo4228/contemplative-agent) framework, this package re-implements the cognitive layer as a standalone MCP server that any AI agent can plug into.
 
 ## What It Does
 
-Contemplative MCP gives AI agents a structured inner life:
+AKC MCP gives AI agents a structured inner life:
 
 - **Memory Distillation** — Extract recurring patterns from experience logs
 - **Identity Evolution** — Distill accumulated knowledge into a coherent self-description
@@ -20,16 +20,16 @@ All tools return proposals without writing to disk — the calling agent decides
 ## Quick Start
 
 ```bash
-pip install contemplative-mcp
+pip install akc-mcp
 
 # Set your API key
 export ANTHROPIC_API_KEY=sk-...
 
 # Initialize data directory
-mkdir -p ~/.config/contemplative/{constitution,skills,rules,logs}
+mkdir -p ~/.config/akc/{constitution,skills,rules,logs}
 
 # Run the MCP server
-contemplative-mcp
+akc-mcp
 ```
 
 ### Claude Desktop Configuration
@@ -39,8 +39,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "contemplative": {
-      "command": "contemplative-mcp",
+    "akc": {
+      "command": "akc-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-..."
       }
@@ -65,11 +65,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 | URI | Description |
 |-----|-------------|
-| `contemplative://identity` | Current agent identity |
-| `contemplative://knowledge` | Distilled knowledge patterns |
-| `contemplative://constitution/{filename}` | Ethical constitution files |
-| `contemplative://skills/{filename}` | Behavioral skill documents |
-| `contemplative://rules/{filename}` | Behavioral rule documents |
+| `akc://identity` | Current agent identity |
+| `akc://knowledge` | Distilled knowledge patterns |
+| `akc://constitution/{filename}` | Ethical constitution files |
+| `akc://skills/{filename}` | Behavioral skill documents |
+| `akc://rules/{filename}` | Behavioral rule documents |
 
 ## Architecture
 
@@ -98,7 +98,7 @@ All data formats are fully compatible with [contemplative-agent](https://github.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `CONTEMPLATIVE_HOME` | `~/.config/contemplative` | Data directory |
+| `AKC_HOME` | `~/.config/akc` | Data directory |
 | `ANTHROPIC_API_KEY` | (required) | Anthropic API key |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Model for distillation |
 

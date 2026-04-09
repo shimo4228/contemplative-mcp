@@ -1,21 +1,21 @@
-# fly.toml app configuration file generated for contemplative-mcp on 2026-04-09T21:55:02+09:00
+# fly.toml app configuration file generated for akc-mcp on 2026-04-09T21:55:02+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'contemplative-mcp'
+app = 'akc-mcp'
 primary_region = 'nrt'
 
 [build]
 
 [env]
-  CONTEMPLATIVE_HOME = '/data'
+  AKC_HOME = '/data'
   MCP_HOST = '0.0.0.0'
   MCP_PORT = '8000'
   MCP_TRANSPORT = 'streamable-http'
 
 [[mounts]]
-  source = 'contemplative_data'
+  source = 'akc_data'
   destination = '/data'
 
 [http_service]

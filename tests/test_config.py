@@ -1,6 +1,6 @@
 """Tests for config module."""
 
-from contemplative_mcp.config import safe_path, validate_content, write_restricted
+from akc_mcp.config import safe_path, validate_content, write_restricted
 
 
 class TestValidateContent:
