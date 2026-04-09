@@ -1,0 +1,46 @@
+[project]
+name = "contemplative-mcp"
+version = "0.1.0"
+description = "MCP server providing contemplative cognitive tools — distillation, constitution, self-improvement"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Tatsuya Shimomoto"},
+]
+keywords = [
+    "mcp", "ai-agent", "contemplative-ai", "memory-distillation",
+    "self-improving", "agent-framework",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["mcp>=1.23.0", "anthropic>=0.50.0"]
+
+[project.urls]
+Homepage = "https://github.com/shimo4228/contemplative-mcp"
+Repository = "https://github.com/shimo4228/contemplative-mcp"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "pytest-asyncio>=0.23.0"]
+
+[project.scripts]
+contemplative-mcp = "contemplative_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contemplative_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+]

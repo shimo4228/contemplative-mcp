@@ -1,0 +1,1 @@
+- Keep API keys, tokens, and credentials out of your output
