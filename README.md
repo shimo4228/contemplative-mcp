@@ -114,8 +114,9 @@ All data formats are fully compatible with [contemplative-agent](https://github.
 
 ### Phase 1.5: Remote MCP Server
 
-- [ ] HTTP/SSE transport (one-line change: `transport="streamable-http"`)
-- [ ] Deploy to Cloudflare Workers / Fly.io
+- [x] Streamable HTTP transport (`--transport streamable-http`)
+- [x] Deploy to Fly.io (Tokyo/nrt, auto-stop, persistent volume)
+- [x] Bearer token authentication (`MCP_AUTH_TOKEN`)
 - [ ] Managed Agents MCP connector integration
 - [ ] OAuth authentication for multi-user
 
