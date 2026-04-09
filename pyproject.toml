@@ -25,6 +25,7 @@ Homepage = "https://github.com/shimo4228/contemplative-mcp"
 Repository = "https://github.com/shimo4228/contemplative-mcp"
 
 [project.optional-dependencies]
+remote = ["uvicorn>=0.30.0", "starlette>=0.38.0"]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "pytest-asyncio>=0.23.0"]
 
 [project.scripts]

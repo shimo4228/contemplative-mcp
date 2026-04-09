@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 from collections.abc import AsyncIterator
@@ -256,8 +257,70 @@ def read_rule(filename: str, ctx: Context = None) -> str:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    """Run the MCP server (stdio transport)."""
-    mcp.run(transport="stdio")
+    """Run the MCP server."""
+    parser = argparse.ArgumentParser(description="Contemplative MCP server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http"],
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+        help="Transport protocol (default: stdio, env: MCP_TRANSPORT)",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("MCP_HOST", "0.0.0.0"),
+        help="Host to bind (default: 0.0.0.0, env: MCP_HOST)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("MCP_PORT", "8000")),
+        help="Port to bind (default: 8000, env: MCP_PORT)",
+    )
+    args = parser.parse_args()
+
+    if args.transport == "streamable-http":
+        auth_token = os.environ.get("MCP_AUTH_TOKEN")
+        if auth_token:
+            _run_with_auth(host=args.host, port=args.port, token=auth_token)
+        else:
+            mcp.run(transport="streamable-http", host=args.host, port=args.port)
+    else:
+        mcp.run(transport="stdio")
+
+
+def _run_with_auth(*, host: str, port: int, token: str) -> None:
+    """Run streamable-http with bearer token authentication middleware."""
+    import contextlib
+
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.middleware import Middleware
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
+    from starlette.routing import Mount
+
+    class BearerAuthMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+            auth_header = request.headers.get("authorization", "")
+            if auth_header != f"Bearer {token}":
+                return JSONResponse({"error": "unauthorized"}, status_code=401)
+            return await call_next(request)
+
+    @contextlib.asynccontextmanager
+    async def app_lifespan(app: Starlette):  # type: ignore[no-untyped-def]
+        async with mcp.session_manager.run():
+            yield
+
+    mcp.settings.streamable_http_path = "/"
+
+    app = Starlette(
+        routes=[Mount("/", app=mcp.streamable_http_app())],
+        lifespan=app_lifespan,
+        middleware=[Middleware(BearerAuthMiddleware)],
+    )
+
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":
