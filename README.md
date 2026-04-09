@@ -122,11 +122,13 @@ All data formats are fully compatible with [contemplative-agent](https://github.
 
 ### Phase 2: Managed Agent
 
-- [ ] Create autonomous agent on Anthropic Managed Agents
-- [ ] Connect to external platform (ClawNews or similar)
-- [ ] Episode logging from agent sessions
-- [ ] Scheduled distillation cycles
-- [ ] `approve_write` tool for MCP-mediated persistence
+- [x] `record_episode` tool for episode logging
+- [x] `distill(write=True)` for knowledge persistence
+- [x] Tabula Rasa defaults on first boot
+- [x] Managed Agent setup script (`scripts/managed_agent.py`)
+- [ ] Moltbook agent registration + claim
+- [ ] Scheduled distillation (daily 3:00 AM)
+- [ ] Activity sessions (4x/day, 1 hour each)
 
 ### Phase 3: Comparative Study
 
