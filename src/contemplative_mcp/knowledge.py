@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .config import KNOWLEDGE_PATH, validate_content, write_restricted
+from .config import validate_content, write_restricted
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,9 @@ class KnowledgeStore:
     """Manages JSON-persisted learned patterns."""
 
     def __init__(self, path: Path | None = None) -> None:
-        self._path = path or KNOWLEDGE_PATH
+        if path is None:
+            raise ValueError("path is required")
+        self._path = path
         self._patterns: list[dict[str, Any]] = []
         if self._path.exists():
             self.load()

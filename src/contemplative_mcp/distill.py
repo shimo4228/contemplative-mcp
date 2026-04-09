@@ -171,9 +171,13 @@ def distill(
     """Distill recent episodes into learned patterns.
 
     Returns summary string. If dry_run, does not persist.
+    episode_log and knowledge_store should be provided by the caller
+    for multi-tenant safety.
     """
-    log = episode_log or EpisodeLog()
-    knowledge = knowledge_store or KnowledgeStore()
+    if episode_log is None or knowledge_store is None:
+        raise ValueError("episode_log and knowledge_store are required")
+    log = episode_log
+    knowledge = knowledge_store
 
     records = log.read_range(days=days)
     if not records:
@@ -252,11 +256,13 @@ def distill_identity(
     """Generate updated identity from accumulated knowledge.
 
     Returns IdentityResult with proposed text (does not write).
+    knowledge_store and identity_path should be provided by the caller
+    for multi-tenant safety.
     """
-    from .config import IDENTITY_PATH
-
-    knowledge = knowledge_store or KnowledgeStore()
-    path = identity_path or IDENTITY_PATH
+    if knowledge_store is None or identity_path is None:
+        raise ValueError("knowledge_store and identity_path are required")
+    knowledge = knowledge_store
+    path = identity_path
 
     context = knowledge.get_context_string(limit=50)
     if not context:

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import prompts
-from .config import CONSTITUTION_DIR, MIN_PATTERNS_REQUIRED, validate_content
+from .config import MIN_PATTERNS_REQUIRED, validate_content
 from .knowledge import KnowledgeStore
 from .llm import generate
 
@@ -19,7 +19,9 @@ class AmendmentResult:
 
 def load_constitution(constitution_dir: Path | None = None) -> str:
     """Load constitution text from the first .md file in directory."""
-    cdir = constitution_dir or CONSTITUTION_DIR
+    if constitution_dir is None:
+        raise ValueError("constitution_dir is required")
+    cdir = constitution_dir
     if not cdir.exists():
         return ""
     md_files = sorted(cdir.glob("*.md"))
@@ -36,8 +38,10 @@ def amend_constitution(
 
     Returns AmendmentResult with proposed text (does not write).
     """
-    knowledge = knowledge_store or KnowledgeStore()
-    cdir = constitution_dir or CONSTITUTION_DIR
+    if knowledge_store is None or constitution_dir is None:
+        raise ValueError("knowledge_store and constitution_dir are required")
+    knowledge = knowledge_store
+    cdir = constitution_dir
 
     constitutional_patterns = knowledge.get_learned_patterns(category="constitutional")
     if len(constitutional_patterns) < MIN_PATTERNS_REQUIRED:

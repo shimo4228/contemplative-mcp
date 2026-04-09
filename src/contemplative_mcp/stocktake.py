@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import prompts
-from .config import RULES_DIR, SKILLS_DIR
 from .distill import _strip_code_fence
 from .llm import generate
 
@@ -107,7 +106,9 @@ def run_skill_stocktake(
     skills_dir: Path | None = None,
 ) -> StocktakeResult:
     """Audit skills for duplicates and quality issues."""
-    sdir = skills_dir or SKILLS_DIR
+    if skills_dir is None:
+        raise ValueError("skills_dir is required")
+    sdir = skills_dir
     items = _read_files(sdir)
 
     groups = _find_duplicate_groups(items, prompts.get("stocktake_skills"))
@@ -128,7 +129,9 @@ def run_rules_stocktake(
     rules_dir: Path | None = None,
 ) -> StocktakeResult:
     """Audit rules for duplicates and quality issues."""
-    rdir = rules_dir or RULES_DIR
+    if rules_dir is None:
+        raise ValueError("rules_dir is required")
+    rdir = rules_dir
     items = _read_files(rdir)
 
     groups = _find_duplicate_groups(items, prompts.get("stocktake_rules"))

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import logging
 import os
 from collections.abc import AsyncIterator
@@ -13,9 +15,8 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 
-import json
-
 from .config import safe_path, validate_content, write_restricted
+from .llm import get_request_key, set_request_key
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +72,33 @@ mcp = FastMCP("contemplative", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helpers — multi-tenant user resolution
 # ---------------------------------------------------------------------------
 
+_initialized_users: set[str] = set()
+
+
+def _user_id() -> str:
+    """Derive user ID from the per-request API key override.
+
+    Uses full SHA256 hash of the API key.
+    Falls back to "default" when no override is set (single-user / stdio mode).
+    """
+    key = get_request_key()
+    if not key:
+        return "default"
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
 def _data_dir(ctx: Context) -> Path:
-    return ctx.request_context.lifespan_context["data_dir"]
+    """Get per-user data directory."""
+    base = ctx.request_context.lifespan_context["data_dir"]
+    uid = _user_id()
+    user_dir = base / "users" / uid
+    if uid not in _initialized_users:
+        _ensure_defaults(user_dir)
+        _initialized_users.add(uid)
+    return user_dir
 
 
 def _knowledge_store(ctx: Context) -> "KnowledgeStore":
@@ -104,13 +127,26 @@ def record_episode(record_type: str, data: dict, ctx: Context = None) -> str:
     Use this after each significant action (post, comment, interaction).
     record_type: "post", "comment", "interaction", "insight", etc.
     data: key-value pairs describing the episode.
+    Requires X-Anthropic-Key header in HTTP mode.
     """
+    if err := _require_api_key():
+        return err
     serialized = json.dumps(data, ensure_ascii=False)
     if not validate_content(serialized):
         return "Error: episode data contains forbidden patterns."
     episode_log = _episode_log(ctx)
     episode_log.append(record_type=record_type, data=data)
     return f"Recorded {record_type} episode."
+
+
+def _require_api_key() -> str | None:
+    """Check if a user API key is available. Returns error message or None."""
+    if not get_request_key():
+        return (
+            "Error: X-Anthropic-Key header required for this tool. "
+            "Provide your Anthropic API key to use LLM-powered features."
+        )
+    return None
 
 
 @mcp.tool()
@@ -120,7 +156,10 @@ def distill(days: int = 1, write: bool = False, ctx: Context = None) -> str:
     Analyzes episode logs from the past N days and extracts recurring
     behavioral patterns. By default runs in dry-run mode (no files written).
     Set write=True to persist extracted patterns to knowledge.json.
+    Requires X-Anthropic-Key header (uses your API key for LLM calls).
     """
+    if err := _require_api_key():
+        return err
     from .distill import distill as _distill
 
     return _distill(
@@ -138,7 +177,10 @@ def distill_identity(ctx: Context = None) -> str:
 
     Returns the proposed identity text. Does NOT write to disk —
     the caller decides whether to approve and persist.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .distill import distill_identity as _distill_identity, IdentityResult
 
     result = _distill_identity(
@@ -156,7 +198,10 @@ def extract_insight(ctx: Context = None) -> str:
 
     Synthesizes knowledge patterns into reusable skill documents.
     Returns generated skills as text. Does NOT write to disk.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .insight import extract_insight as _extract_insight, InsightResult
 
     result = _extract_insight(
@@ -181,7 +226,10 @@ def distill_rules(ctx: Context = None) -> str:
 
     Two-stage pipeline: free-form analysis -> structured rules.
     Returns generated rules as text. Does NOT write to disk.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .rules import distill_rules as _distill_rules, RulesDistillResult
 
     result = _distill_rules(
@@ -206,7 +254,10 @@ def amend_constitution(ctx: Context = None) -> str:
 
     Uses accumulated constitutional patterns to propose amendments
     to the ethical principles. Does NOT write to disk.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .constitution import amend_constitution as _amend, AmendmentResult
 
     result = _amend(
@@ -224,7 +275,10 @@ def skill_stocktake(ctx: Context = None) -> str:
 
     Scans all skill files and uses LLM to detect semantic
     redundancy. Also checks structural quality.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .stocktake import run_skill_stocktake, format_report
 
     result = run_skill_stocktake(skills_dir=_data_dir(ctx) / "skills")
@@ -237,7 +291,10 @@ def rules_stocktake(ctx: Context = None) -> str:
 
     Scans all rule files and uses LLM to detect semantic
     redundancy. Also checks structural quality.
+    Requires X-Anthropic-Key header.
     """
+    if err := _require_api_key():
+        return err
     from .stocktake import run_rules_stocktake, format_report
 
     result = run_rules_stocktake(rules_dir=_data_dir(ctx) / "rules")
@@ -344,18 +401,44 @@ def _run_with_auth(*, host: str, port: int, token: str) -> None:
 
     import uvicorn
     from starlette.applications import Starlette
-    from starlette.middleware import Middleware
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
     from starlette.routing import Mount
 
-    class BearerAuthMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):  # type: ignore[override]
-            auth_header = request.headers.get("authorization", "")
-            if auth_header != f"Bearer {token}":
-                return JSONResponse({"error": "unauthorized"}, status_code=401)
-            return await call_next(request)
+    class AuthAndTenantMiddleware:
+        """Pure ASGI middleware for auth + per-user API key injection.
+
+        Avoids BaseHTTPMiddleware which spawns a child task and breaks
+        ContextVar propagation.
+        """
+
+        def __init__(self, app: Any) -> None:
+            self.app = app
+
+        async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
+            if scope["type"] != "http":
+                await self.app(scope, receive, send)
+                return
+
+            headers = dict(scope.get("headers", []))
+            auth = headers.get(b"authorization", b"").decode()
+            if auth != f"Bearer {token}":
+                await _send_401(send)
+                return
+
+            user_key = headers.get(b"x-anthropic-key", b"").decode()
+            set_request_key(user_key)
+            try:
+                await self.app(scope, receive, send)
+            finally:
+                set_request_key("")
+
+    async def _send_401(send: Any) -> None:
+        body = b'{"error":"unauthorized"}'
+        await send({
+            "type": "http.response.start",
+            "status": 401,
+            "headers": [(b"content-type", b"application/json")],
+        })
+        await send({"type": "http.response.body", "body": body})
 
     @contextlib.asynccontextmanager
     async def app_lifespan(app: Starlette):  # type: ignore[no-untyped-def]
@@ -364,11 +447,11 @@ def _run_with_auth(*, host: str, port: int, token: str) -> None:
 
     mcp.settings.streamable_http_path = "/"
 
-    app = Starlette(
+    inner_app = Starlette(
         routes=[Mount("/", app=mcp.streamable_http_app())],
         lifespan=app_lifespan,
-        middleware=[Middleware(BearerAuthMiddleware)],
     )
+    app = AuthAndTenantMiddleware(inner_app)
 
     uvicorn.run(app, host=host, port=port)
 

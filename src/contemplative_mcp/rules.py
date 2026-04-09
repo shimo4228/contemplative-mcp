@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 
 from . import prompts
-from .config import MAX_SLUG_LENGTH, MIN_SKILLS_REQUIRED, RULES_DIR, SKILLS_DIR, validate_content
+from .config import MAX_SLUG_LENGTH, MIN_SKILLS_REQUIRED, validate_content
 from .llm import generate
 
 
@@ -70,9 +70,13 @@ def distill_rules(
 
     Two-stage pipeline: free-form extraction -> structured Markdown.
     Returns RulesDistillResult (does not write files).
+    skills_dir and rules_dir should be provided by the caller
+    for multi-tenant safety.
     """
-    sdir = skills_dir or SKILLS_DIR
-    rdir = rules_dir or RULES_DIR
+    if skills_dir is None or rules_dir is None:
+        raise ValueError("skills_dir and rules_dir are required")
+    sdir = skills_dir
+    rdir = rules_dir
 
     skill_texts = _read_skills(sdir)
     if len(skill_texts) < MIN_SKILLS_REQUIRED:

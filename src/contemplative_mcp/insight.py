@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 
 from . import prompts
-from .config import BATCH_SIZE, MAX_SLUG_LENGTH, MIN_PATTERNS_REQUIRED, SKILLS_DIR, validate_content
+from .config import BATCH_SIZE, MAX_SLUG_LENGTH, MIN_PATTERNS_REQUIRED, validate_content
 from .knowledge import KnowledgeStore
 from .llm import generate
 
@@ -50,9 +50,13 @@ def extract_insight(
     """Extract behavioral skills from learned patterns.
 
     Returns InsightResult (does not write files).
+    knowledge_store and skills_dir should be provided by the caller
+    for multi-tenant safety.
     """
-    knowledge = knowledge_store or KnowledgeStore()
-    sdir = skills_dir or SKILLS_DIR
+    if knowledge_store is None or skills_dir is None:
+        raise ValueError("knowledge_store and skills_dir are required")
+    knowledge = knowledge_store
+    sdir = skills_dir
 
     patterns = knowledge.get_learned_patterns(category="uncategorized")
     if len(patterns) < MIN_PATTERNS_REQUIRED:

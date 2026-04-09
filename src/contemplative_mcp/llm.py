@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
+from collections import OrderedDict
+from contextvars import ContextVar
 from typing import Any
 
 import anthropic
@@ -13,6 +16,21 @@ logger = logging.getLogger(__name__)
 
 _client: anthropic.Anthropic | None = None
 _model: str = "claude-sonnet-4-6"
+
+# Per-request API key override for multi-tenant mode.
+_override_api_key: ContextVar[str] = ContextVar("override_api_key", default="")
+_CLIENT_CACHE_MAX = 128
+_client_cache: OrderedDict[str, anthropic.Anthropic] = OrderedDict()
+
+
+def set_request_key(key: str) -> None:
+    """Set the per-request API key override (call from middleware)."""
+    _override_api_key.set(key)
+
+
+def get_request_key() -> str:
+    """Get the current per-request API key override."""
+    return _override_api_key.get("")
 
 
 def configure(
@@ -42,6 +60,18 @@ def generate(
         configure()
     assert _client is not None
 
+    # Use per-request API key if set (multi-tenant mode)
+    override_key = _override_api_key.get("")
+    if override_key:
+        cache_key = hashlib.sha256(override_key.encode()).hexdigest()
+        if cache_key not in _client_cache:
+            if len(_client_cache) >= _CLIENT_CACHE_MAX:
+                _client_cache.popitem(last=False)
+            _client_cache[cache_key] = anthropic.Anthropic(api_key=override_key)
+        client = _client_cache[cache_key]
+    else:
+        client = _client
+
     try:
         kwargs: dict[str, Any] = {
             "model": _model,
@@ -56,7 +86,7 @@ def generate(
                 f"{prompt}\n\nRespond with ONLY valid JSON, no explanation."
             )
 
-        msg = _client.messages.create(**kwargs)
+        msg = client.messages.create(**kwargs)
         text = msg.content[0].text if msg.content else None
 
         if text and not validate_content(text):

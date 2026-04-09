@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from .config import LOG_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,9 @@ class EpisodeLog:
     """Append-only daily JSONL logs."""
 
     def __init__(self, log_dir: Path | None = None) -> None:
-        self._log_dir = log_dir or LOG_DIR
+        if log_dir is None:
+            raise ValueError("log_dir is required")
+        self._log_dir = log_dir
 
     def append(self, record_type: str, data: dict[str, Any]) -> None:
         """Append a record to today's JSONL file."""

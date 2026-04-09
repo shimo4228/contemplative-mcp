@@ -13,13 +13,8 @@ CONTEMPLATIVE_HOME = Path(
     )
 )
 
-# Sub-directories
-IDENTITY_PATH = CONTEMPLATIVE_HOME / "identity.md"
-KNOWLEDGE_PATH = CONTEMPLATIVE_HOME / "knowledge.json"
-CONSTITUTION_DIR = CONTEMPLATIVE_HOME / "constitution"
-SKILLS_DIR = CONTEMPLATIVE_HOME / "skills"
-RULES_DIR = CONTEMPLATIVE_HOME / "rules"
-LOG_DIR = CONTEMPLATIVE_HOME / "logs"
+# Note: Per-user paths are resolved at request time in server.py.
+# Global path constants were removed for multi-tenant safety.
 
 # --- File permissions ---
 RESTRICTED_MODE = 0o600
