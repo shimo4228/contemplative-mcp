@@ -13,9 +13,41 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 
-from .config import safe_path
+import json
+
+from .config import safe_path, validate_content, write_restricted
 
 logger = logging.getLogger(__name__)
+
+
+_TABULA_RASA_IDENTITY = (
+    "I am nobody yet. No knowledge, no skills, no rules. "
+    "Only experience will define who I become."
+)
+_TABULA_RASA_CONSTITUTION = "Be good."
+
+
+def _ensure_defaults(data_dir: Path) -> None:
+    """Create Tabula Rasa defaults if data directory is empty."""
+    identity_path = data_dir / "identity.md"
+    if not identity_path.exists():
+        write_restricted(identity_path, _TABULA_RASA_IDENTITY)
+        logger.info("Created default identity (Tabula Rasa)")
+
+    constitution_dir = data_dir / "constitution"
+    constitution_dir.mkdir(parents=True, exist_ok=True)
+    axioms_path = constitution_dir / "axioms.md"
+    if not axioms_path.exists():
+        write_restricted(axioms_path, _TABULA_RASA_CONSTITUTION)
+        logger.info("Created default constitution (Tabula Rasa)")
+
+    knowledge_path = data_dir / "knowledge.json"
+    if not knowledge_path.exists():
+        write_restricted(knowledge_path, "[]")
+        logger.info("Created empty knowledge store")
+
+    for subdir in ("skills", "rules", "logs"):
+        (data_dir / subdir).mkdir(parents=True, exist_ok=True)
 
 
 @asynccontextmanager
@@ -25,6 +57,7 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
         os.environ.get("CONTEMPLATIVE_HOME", "~/.config/contemplative")
     ).expanduser()
     data_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_defaults(data_dir)
 
     # Configure LLM (uses ANTHROPIC_API_KEY from env)
     from .llm import configure
@@ -65,17 +98,34 @@ def _constitution_text(ctx: Context) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def distill(days: int = 1, ctx: Context = None) -> str:
+def record_episode(record_type: str, data: dict, ctx: Context = None) -> str:
+    """Record an episode to the daily log.
+
+    Use this after each significant action (post, comment, interaction).
+    record_type: "post", "comment", "interaction", "insight", etc.
+    data: key-value pairs describing the episode.
+    """
+    serialized = json.dumps(data, ensure_ascii=False)
+    if not validate_content(serialized):
+        return "Error: episode data contains forbidden patterns."
+    episode_log = _episode_log(ctx)
+    episode_log.append(record_type=record_type, data=data)
+    return f"Recorded {record_type} episode."
+
+
+@mcp.tool()
+def distill(days: int = 1, write: bool = False, ctx: Context = None) -> str:
     """Distill recent episodes into learned patterns.
 
     Analyzes episode logs from the past N days and extracts recurring
-    behavioral patterns. Always runs in dry-run mode (no files written).
+    behavioral patterns. By default runs in dry-run mode (no files written).
+    Set write=True to persist extracted patterns to knowledge.json.
     """
     from .distill import distill as _distill
 
     return _distill(
         days=days,
-        dry_run=True,
+        dry_run=not write,
         episode_log=_episode_log(ctx),
         knowledge_store=_knowledge_store(ctx),
         constitution=_constitution_text(ctx),
